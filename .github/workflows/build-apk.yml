@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -27,6 +28,32 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Reduce App Icon Logo Size
+        shell: bash
+        run: |
+          set -e
+
+          find app/src/main/res -type f \
+            -name "ic_launcher_foreground.png" \
+            -print0 |
+          while IFS= read -r -d '' file; do
+            echo "Processing: $file"
+
+            magick "$file" \
+              -resize 70% \
+              -gravity center \
+              -background none \
+              -extent "$(magick identify -format '%wx%h' "$file")" \
+              "$file.tmp.png"
+
+            mv "$file.tmp.png" "$file"
+          done
 
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace clean assembleDebug
