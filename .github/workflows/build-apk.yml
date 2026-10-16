@@ -5,6 +5,9 @@ on:
   push:
     branches: [main, master]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -62,8 +65,8 @@ jobs:
                   image = source.convert("RGBA")
 
               width, height = image.size
-
               scale = 0.70
+
               new_width = round(width * scale)
               new_height = round(height * scale)
 
@@ -91,12 +94,62 @@ jobs:
               )
           PY
 
-      - name: Build debug APK
-        run: gradle --no-daemon --stacktrace clean assembleDebug
+      - name: Decode Release Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -e
 
-      - name: Upload APK
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 secret is missing."
+            exit 1
+          fi
+
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/joyit-release.jks"
+
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/joyit-release.jks" >> "$GITHUB_ENV"
+
+      - name: Build Release APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -e
+
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || \
+             [ -z "$ANDROID_KEY_ALIAS" ] || \
+             [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "ERROR: One or more Android signing secrets are missing."
+            exit 1
+          fi
+
+          gradle --no-daemon --stacktrace clean assembleRelease
+
+      - name: Verify Release APK Signature
+        shell: bash
+        run: |
+          set -e
+
+          APK="app/build/outputs/apk/release/app-release.apk"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: Release APK not found."
+            exit 1
+          fi
+
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: joyit-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: joyit-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+      - name: Clean Up Release Keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/joyit-release.jks"
