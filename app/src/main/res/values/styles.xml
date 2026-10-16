@@ -2,12 +2,12 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#B28DFF</item>
+        <item name="android:colorAccent">@color/joyit_accent</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:statusBarColor">#111018</item>
-        <item name="android:navigationBarColor">#111018</item>
+        <item name="android:statusBarColor">@color/joyit_background</item>
+        <item name="android:navigationBarColor">@color/joyit_background</item>
         <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:windowBackground">#111018</item>
+        <item name="android:windowBackground">@color/joyit_background</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
 </resources>

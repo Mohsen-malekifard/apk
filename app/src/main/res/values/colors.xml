@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="joyit_background">#111018</color>
+    <color name="joyit_accent">#B28DFF</color>
+    <color name="joyit_text_secondary">#B5B2C1</color>
     <color name="joyit_icon_background">#251747</color>
 </resources>

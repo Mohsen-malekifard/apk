@@ -4,14 +4,22 @@ plugins {
 
 android {
     namespace 'ir.joyit.app'
+
+    // SDK used to compile the source. Keep this aligned with the CI workflow.
     compileSdk 35
 
     defaultConfig {
+        // Keep applicationId stable after publishing; it identifies installed updates.
         applicationId 'ir.joyit.app'
         minSdk 23
+        // Target API 34 (Android 14), as requested.
         targetSdk 34
         versionCode 1
         versionName '1.0.0'
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {

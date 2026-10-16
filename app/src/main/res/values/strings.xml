@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Joyit</string>
+    <string name="error_title">اتصال برقرار نشد</string>
+    <string name="error_message">اتصال اینترنت را بررسی کن و دوباره تلاش کن.</string>
+    <string name="retry_connection">تلاش دوباره</string>
+</resources>
