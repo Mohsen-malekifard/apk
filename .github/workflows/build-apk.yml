@@ -24,36 +24,72 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: python -m pip install Pillow
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-
-      - name: Install ImageMagick
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick
 
       - name: Reduce App Icon Logo Size
         shell: bash
         run: |
           set -e
 
-          find app/src/main/res -type f \
-            -name "ic_launcher_foreground.png" \
-            -print0 |
-          while IFS= read -r -d '' file; do
-            echo "Processing: $file"
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
 
-            magick "$file" \
-              -resize 70% \
-              -gravity center \
-              -background none \
-              -extent "$(magick identify -format '%wx%h' "$file")" \
-              "$file.tmp.png"
+          files = list(
+              Path("app/src/main/res").rglob("ic_launcher_foreground.png")
+          )
 
-            mv "$file.tmp.png" "$file"
-          done
+          if not files:
+              raise SystemExit(
+                  "ERROR: ic_launcher_foreground.png was not found!"
+              )
+
+          for file in files:
+              print(f"Processing: {file}")
+
+              with Image.open(file) as source:
+                  image = source.convert("RGBA")
+
+              width, height = image.size
+
+              scale = 0.70
+              new_width = round(width * scale)
+              new_height = round(height * scale)
+
+              logo = image.resize(
+                  (new_width, new_height),
+                  Image.Resampling.LANCZOS
+              )
+
+              result = Image.new(
+                  "RGBA",
+                  (width, height),
+                  (0, 0, 0, 0)
+              )
+
+              x = (width - new_width) // 2
+              y = (height - new_height) // 2
+
+              result.alpha_composite(logo, (x, y))
+              result.save(file, format="PNG")
+
+              print(
+                  f"SUCCESS: {file} | "
+                  f"Original: {width}x{height} | "
+                  f"Logo: {new_width}x{new_height}"
+              )
+          PY
 
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace clean assembleDebug
